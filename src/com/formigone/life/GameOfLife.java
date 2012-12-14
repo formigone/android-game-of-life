@@ -60,7 +60,7 @@ public class GameOfLife extends Activity {
 						e.printStackTrace();
 					}
 
-					grid.updateGrid();
+					grid.nextGeneration();
 				}
 			}
 			
