@@ -19,8 +19,6 @@ public class Grid {
 		cells = new ArrayList<Organism>(width * height);
 		for (int i = 0; i < width * height; i++)
 			cells.add(organismFactory(i, cellWidth, cellHeight));
-
-		seedGrid(true);
 	}
 	
 	private Organism organismFactory(int i, int width, int height) {
@@ -77,24 +75,35 @@ public class Grid {
 		int cellWidth = cells.get(0).getWidth();
 		int cellHeight = cells.get(0).getHeight();
 		int neighbors;
+		boolean isAlive;
 		
 		for (int i = 0; i < width * height; i++) {
 			neighbors = 0;
 			neighbors = getNeighborCount(i);
+			isAlive = cells.get(i).isAlive();
 			
 			// Any live cell with fewer than two live neighbors dies
-			if (neighbors < 2)
-				nextGen.add(organismFactory(i, cellWidth, cellHeight));
+			if (isAlive && neighbors < 2)
+				nextGen.add(organismFactory(i, cellWidth, cellHeight, false));
 			
 			// Any live cell with two or three live neighbors lives
+			else if (isAlive && (neighbors == 2 || neighbors == 3))
+				nextGen.add(organismFactory(i, cellWidth, cellHeight, true));
 			
 			// Any live cell with more than three live neighbors dies
+			else if (isAlive && neighbors > 3)
+				nextGen.add(organismFactory(i, cellWidth, cellHeight, false));
 			
 			// Any dead cell with exactly three live neighbors becomes alive
+			else if (!isAlive && neighbors == 3)
+				nextGen.add(organismFactory(i, cellWidth, cellHeight, true));
 			
-			// Reset grid
-			cells = nextGen;
+			else
+				nextGen.add(organismFactory(i, cellWidth, cellHeight, false));
 		}
+
+		// Reset grid
+		cells = nextGen;
 	}
 	
 	private Organism getCell(int x, int y) {
@@ -102,7 +111,7 @@ public class Grid {
 
 		if (index < 0 || index > width * height || x < 0 || y < 0 || x > width - 1 || y > height - 1)
 			return null;
-
+		
 		return cells.get(index);
 	}
 	
@@ -118,19 +127,34 @@ public class Grid {
 		return i / height;
 	}
 
-	public void seedGrid(boolean randomize) {
+	public void seedGrid() {
 		Random rand = new Random();
 		Organism cell;
 
 		for (int i = 0; i < width * height; i++) {
 			cell = getCell(i);
-			
-			if (randomize)
-				cell.setLife(rand.nextBoolean());
-			// Only make even cells alive (index 0, 2, 4, 6, ...)
-			else
-				cell.setLife(i % 2 == 0 ? true : false);
+			cell.setLife(rand.nextBoolean());
 		}
+	}
+
+	public void seedGrid(List<Boolean> states) {
+		// In case the list passed in is greater than the grid, iterate over the
+		// smaller list of cells
+		int len = states.size() > cells.size() ? cells.size() : states.size();
+		Organism cell;
+		
+		for (int i = 0; i < len; i++) {
+			cell = getCell(i);
+			cell.setLife(states.get(i));
+		}
+	}
+	
+	public void setGridAt(boolean life, int i) {
+		getCell(i).setLife(life);
+	}
+	
+	public void setGridAt(boolean life, int x, int y) {
+		getCell(x, y).setLife(life);
 	}
 
 	public String getGrid() {
@@ -139,13 +163,18 @@ public class Grid {
 
 		for (int i = 0; i < width * height; i++) {
 			cell = getCell(i);
-			gridStatus += (cell.isAlive() ? "[#]" : "[ ]") + " ";
+			gridStatus += (cell.isAlive() ? "#" : " ") + "";
 
 			if ((i + 1) % width == 0)
 				gridStatus += "\n";
 		}
 
 		return gridStatus;
+	}
+	
+	public void getGridStates(List<Boolean> states) {
+		for (Organism org : cells)
+			states.add(org.isAlive());
 	}
 	
 	public int getWidth() {
